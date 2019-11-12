@@ -1,6 +1,7 @@
 package com.awesome.im.gateway.tcp;
 
-import com.awesome.im.proto.AuthenticateRequestProto;
+import com.awesome.im.gateway.tcp.dispatcher.DispatcherInstanceManager;
+import com.awesome.im.proto.ImCommunicationProto;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -25,6 +26,8 @@ public class GatewayTcpServer {
         final   EventLoopGroup ioThreadGroup=new NioEventLoopGroup();
 
 
+        DispatcherInstanceManager.getInstance().init();
+
         final ServerBootstrap server=new ServerBootstrap();
 
 
@@ -37,7 +40,10 @@ public class GatewayTcpServer {
                         protected void initChannel(SocketChannel ch)  {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast(new ProtobufVarint32FrameDecoder());
-                            pipeline.addLast(new ProtobufDecoder(AuthenticateRequestProto.AuthenticateRequest.getDefaultInstance()));
+                            pipeline.addLast(new ProtobufDecoder(
+                                    ImCommunicationProto.CommonMessage.getDefaultInstance()
+
+                            ));
                             pipeline.addLast(new ProtobufVarint32LengthFieldPrepender());
                             pipeline.addLast(new ProtobufEncoder());
                             pipeline.addLast(new GatewayTcpHandler());

@@ -1,8 +1,14 @@
 package com.awesome.im.gateway.tcp;
 
-import com.awesome.im.proto.AuthenticateRequestProto;
+import cn.hutool.json.JSONUtil;
+import com.awesome.im.common.request.CommonConstant;
+import com.awesome.im.common.request.dto.AuthenticateUserDTO;
+import com.awesome.im.gateway.tcp.handler.RequestHandler;
+import com.awesome.im.gateway.tcp.manager.SessionManager;
+import com.awesome.im.proto.ImCommunicationProto;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.SocketChannel;
 
 /**
  * @author awesome
@@ -10,12 +16,40 @@ import io.netty.channel.SimpleChannelInboundHandler;
  *  socketChannel 处理器
  *
  */
-public class GatewayTcpHandler extends SimpleChannelInboundHandler<AuthenticateRequestProto.AuthenticateRequest> {
+public class GatewayTcpHandler extends SimpleChannelInboundHandler< ImCommunicationProto.CommonMessage> {
 
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, AuthenticateRequestProto.AuthenticateRequest authenticateRequest) throws Exception {
-        System.out.println(authenticateRequest);
+    protected void channelRead0(ChannelHandlerContext ctx,
+                                ImCommunicationProto.CommonMessage commonMessage) throws Exception {
+
+        //接收到sdk客户端发过来的信息
+        ImCommunicationProto.CommonMessage.DataTye dateType = commonMessage.getDateType();
+        switch (dateType){
+            case ReponseType:
+
+
+                break;
+            case RequestType:
+                ImCommunicationProto.CommonMessage.Request request = commonMessage.getRequest();
+                RequestHandler requestHandler = RequestHandler.getInstance();
+                Integer requesType = request.getRequesType();
+                //发起用户请求
+                if (CommonConstant.REQUESTTYPEAUTHREQUEST.equals(requesType)){
+                    String strBody = request.getStrBody();
+                    AuthenticateUserDTO authenticateUserDTO = JSONUtil.toBean(strBody, AuthenticateUserDTO.class);
+                    requestHandler.authenticate(authenticateUserDTO);
+                    SessionManager sessionManager = SessionManager.getIntance();
+                    sessionManager.addSesion(authenticateUserDTO.getUid(), (SocketChannel) ctx.channel());
+                }
+                break;
+
+
+                default:
+
+                    break;
+        }
+
     }
 
     @Override
